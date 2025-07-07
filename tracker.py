@@ -1,10 +1,25 @@
 import cv2
 import numpy as np
-from ultralytics import YOLO
+import threading
+import signal
 from collections import defaultdict
 import torch
 import os
 from sklearn.cluster import KMeans
+
+# Work around signal registration errors when running under Streamlit
+if threading.current_thread() is not threading.main_thread():
+    _orig_signal = signal.signal
+
+    def _safe_signal(sig, func):
+        try:
+            _orig_signal(sig, func)
+        except ValueError:
+            pass
+
+    signal.signal = _safe_signal
+
+from ultralytics import YOLO
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 
