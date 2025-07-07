@@ -24,8 +24,8 @@ class FootballTracker:
         self.player_colors = {}
         self.team_colors = {}
         
-    def assign_team_colors(self, frame, boxes):
-        """Cluster jersey colors to identify teams"""
+    def assign_team_colors(self, frame, boxes, track_ids):
+        """Cluster jersey colors to identify teams and players"""
         if len(boxes) < 2:
             return
             
@@ -50,19 +50,18 @@ class FootballTracker:
                 kmeans.fit(pixels)
                 dominant_colors.append(kmeans.cluster_centers_[0])
         
-        # Cluster into teams
+        # Cluster into two teams and assign labels to players
         if len(dominant_colors) > 1:
             kmeans = KMeans(n_clusters=2, n_init=3)
             kmeans.fit(dominant_colors)
+
             self.team_colors = {
                 0: (255, 0, 0),  # Team A - Blue
                 1: (0, 0, 255)   # Team B - Red
             }
-            
-            # Assign teams to players
-            for i, track_id in enumerate(self.track_history.keys()):
-                if i < len(kmeans.labels_):
-                    self.player_stats[track_id]['team'] = kmeans.labels_[i]
+
+            for track_id, label in zip(track_ids, kmeans.labels_):
+                self.player_stats[track_id]['team'] = int(label)
     
     def get_player_color(self, track_id):
         """Assign unique color to each player"""
@@ -105,7 +104,7 @@ class FootballTracker:
             
             # Assign teams on first frame
             if self.frame_count == 0:
-                self.assign_team_colors(original_frame, boxes)
+                self.assign_team_colors(original_frame, boxes, track_ids)
             
             # Process each player
             for box, track_id in zip(boxes, track_ids):
